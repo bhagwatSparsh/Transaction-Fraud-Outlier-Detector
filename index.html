@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Enterprise Fraud Radar & Risk Mitigation Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          display: ['Space Grotesk', 'sans-serif'],
+          mono: ['JetBrains Mono', 'monospace'],
+        },
+      },
+    },
+  };
+</script>
+<style>
+  :root[data-theme="dark"] {
+    --bg: #060913;
+    --bg-2: #0B132B;
+    --panel: rgba(11, 19, 43, 0.72);
+    --panel-solid: #0B132B;
+    --border: #1C2541;
+    --border-soft: rgba(28,37,65,0.55);
+    --text: #E5E7EB;
+    --text-soft: #94A3B8;
+    --text-mute: #64748B;
+    --accent: #6366F1;
+    --accent-2: #3A86FF;
+    --good: #00F5D4;
+    --warn: #FFB703;
+    --bad: #FF0055;
+    --grid: rgba(58,134,255,0.06);
+    --glow: radial-gradient(1200px 600px at 20% -10%, rgba(99,102,241,0.18), transparent 60%),
+            radial-gradient(900px 500px at 90% 0%, rgba(58,134,255,0.12), transparent 60%);
+  }
+  :root[data-theme="light"] {
+    --bg: #F5F7FB;
+    --bg-2: #FFFFFF;
+    --panel: rgba(255,255,255,0.85);
+    --panel-solid: #FFFFFF;
+    --border: #E2E8F0;
+    --border-soft: rgba(148,163,184,0.35);
+    --text: #0F172A;
+    --text-soft: #475569;
+    --text-mute: #94A3B8;
+    --accent: #4F46E5;
+    --accent-2: #2563EB;
+    --good: #0EA371;
+    --warn: #B45309;
+    --bad: #DC2626;
+    --grid: rgba(99,102,241,0.06);
+    --glow: radial-gradient(1200px 600px at 20% -10%, rgba(99,102,241,0.10), transparent 60%),
+            radial-gradient(900px 500px at 90% 0%, rgba(37,99,235,0.08), transparent 60%);
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      var(--glow),
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/40px 40px;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 40%, transparent 90%);
+  }
+  .display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.01em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+  .panel {
+    background: var(--panel);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    transition: border-color .25s, transform .25s, box-shadow .25s;
+    position: relative;
+    z-index: 10;
+  }
+  .panel:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+  .panel.kpi::after {
+    content:""; position:absolute; left:14px; right:14px; bottom:-1px; height:1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity:.4;
+  }
+  .badge { display:inline-flex; align-items:center; gap:6px; font-size:10px; font-weight:700; letter-spacing:.1em; padding:4px 10px; border-radius:6px; border:1px solid; }
+  .badge-good { color: var(--good); border-color: color-mix(in oklab, var(--good) 35%, transparent); background: color-mix(in oklab, var(--good) 8%, transparent); }
+  .badge-bad  { color: var(--bad);  border-color: color-mix(in oklab, var(--bad) 35%, transparent);  background: color-mix(in oklab, var(--bad) 8%, transparent); }
+  .badge-warn { color: var(--warn); border-color: color-mix(in oklab, var(--warn) 35%, transparent); background: color-mix(in oklab, var(--warn) 8%, transparent); }
+
+  .pulse-dot { width:8px; height:8px; border-radius:50%; background: var(--good); box-shadow: 0 0 0 0 color-mix(in oklab, var(--good) 60%, transparent); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%{ box-shadow:0 0 0 0 color-mix(in oklab,var(--good) 60%,transparent);} 70%{ box-shadow:0 0 0 10px transparent;} 100%{ box-shadow:0 0 0 0 transparent;} }
+
+  .row-enter { animation: rowIn .35s ease-out both; }
+  @keyframes rowIn { from{ opacity:0; transform: translateY(4px);} to{opacity:1; transform:none;} }
+
+  input, select, button { font-family: inherit; }
+  .field {
+    background: color-mix(in oklab, var(--bg) 80%, transparent);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .field:focus { border-color: var(--accent); }
+  .btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white; font-weight: 700; font-size: 11px; letter-spacing:.12em;
+    padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer;
+    box-shadow: 0 6px 20px -8px var(--accent);
+    transition: transform .15s, box-shadow .2s;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px -8px var(--accent); }
+  .btn:active { transform: scale(.97); }
+  .btn-ghost {
+    background: transparent; border: 1px solid var(--border); color: var(--text-soft);
+    padding: 7px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; transition: all .2s;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+
+  .modal-blur { background: color-mix(in oklab, var(--bg) 75%, transparent); backdrop-filter: blur(14px); }
+
+  #alertStack {
+    position: fixed; right: 20px; bottom: 20px; z-index: 60;
+    display: flex; flex-direction: column; gap: 10px; max-width: 360px;
+  }
+  .toast {
+    background: var(--panel-solid);
+    border: 1px solid color-mix(in oklab, var(--bad) 45%, var(--border));
+    border-left: 3px solid var(--bad);
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    animation: toastIn .35s cubic-bezier(.2,.8,.2,1);
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  @keyframes toastIn { from{ transform: translateX(120%); opacity:0;} to{ transform:none; opacity:1;} }
+  .toast.out { animation: toastOut .3s ease-in forwards; }
+  @keyframes toastOut { to{ transform: translateX(120%); opacity:0;} }
+</style>
+</head>
+<body class="min-h-screen antialiased">
+
+<header class="sticky top-0 z-40 border-b" style="border-color: var(--border-soft); background: color-mix(in oklab, var(--bg) 70%, transparent); backdrop-filter: blur(12px);">
+  <div class="max-w-[1750px] mx-auto px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 6px 20px -6px var(--accent);">
+        <span class="text-lg">🛡️</span>
+      </div>
+      <div>
+        <h1 class="display text-[15px] md:text-[17px] font-bold tracking-wide" style="color: var(--text);">
+          ENTERPRISE FRAUD RADAR
+          <span style="color: var(--text-mute);" class="font-medium">/ Risk Mitigation Workspace</span>
+        </h1>
+        <p class="text-[11px]" style="color: var(--text-mute);">Streaming live transactional audit records from local data clusters.</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="badge badge-good"><span class="pulse-dot"></span> GATEWAY ONLINE</span>
+      <button id="themeToggle" class="btn-ghost" title="Toggle theme">
+        <span id="themeIcon">☾</span> <span id="themeLabel" class="ml-1">Dark</span>
+      </button>
+      <button onclick="fetchData()" class="btn">FORCE SYNC</button>
+    </div>
+  </div>
+</header>
+
+<main class="relative z-10 max-w-[1750px] mx-auto p-6 space-y-6">
+
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="panel kpi p-5">
+      <p class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-mute);">Total Logs Audited</p>
+      <h3 id="total-tx" class="display text-3xl font-bold mt-2 mono" style="color: var(--text);">0</h3>
+      <p class="text-[10px] mt-1" style="color: var(--text-mute);">all-time records</p>
+    </div>
+    <div class="panel kpi p-5">
+      <p class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-mute);">Intercepted Threats</p>
+      <h3 id="fraud-tx" class="display text-3xl font-bold mt-2 mono" style="color: var(--bad);">0 cases</h3>
+      <span class="badge badge-bad mt-2"><span class="pulse-dot" style="background: var(--bad);"></span> ACTIVE</span>
+    </div>
+    <div class="panel kpi p-5">
+      <p class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-mute);">Fraud Velocity Rate</p>
+      <h3 id="fraud-rate" class="display text-3xl font-bold mt-2 mono" style="color: var(--warn);">0.0%</h3>
+      <p class="text-[10px] mt-1" style="color: var(--text-mute);">of total stream</p>
+    </div>
+    <div class="panel kpi p-5">
+      <p class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-mute);">Capital Flow</p>
+      <h3 id="total-volume" class="display text-3xl font-bold mt-2 mono" style="color: var(--good);">$0.00</h3>
+      <p class="text-[10px] mt-1" style="color: var(--text-mute);">aggregate volume</p>
+    </div>
+    <div class="panel p-5 col-span-2 lg:col-span-1 flex items-center gap-4">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-mute);">Mean Risk Index</p>
+        <h3 id="mean-risk" class="display text-3xl font-bold mt-2 mono" style="color: var(--accent-2);">0.0%</h3>
+        <p id="risk-label" class="text-[10px] mt-1" style="color: var(--text-mute);">awaiting telemetry</p>
+      </div>
+      <svg viewBox="0 0 120 70" class="w-[120px] h-[70px] ml-auto">
+        <path d="M10,60 A50,50 0 0,1 110,60" fill="none" stroke="var(--border)" stroke-width="8" stroke-linecap="round"/>
+        <path id="gaugeArc" d="M10,60 A50,50 0 0,1 110,60" fill="none" stroke="url(#gaugeGrad)" stroke-width="8" stroke-linecap="round"
+              stroke-dasharray="157" stroke-dashoffset="157" style="transition: stroke-dashoffset .8s ease;"/>
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0" x2="1">
+            <stop offset="0%" stop-color="#00F5D4"/>
+            <stop offset="55%" stop-color="#FFB703"/>
+            <stop offset="100%" stop-color="#FF0055"/>
+          </linearGradient>
+        </defs>
+        <line id="gaugeNeedle" x1="60" y1="60" x2="60" y2="20"
+              stroke="var(--text)" stroke-width="2" stroke-linecap="round"
+              style="transform-origin: 60px 60px; transform: rotate(-90deg); transition: transform .8s cubic-bezier(.2,.8,.2,1);"/>
+        <circle cx="60" cy="60" r="4" fill="var(--accent)"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="px-4 py-2.5 rounded-lg text-[11px] font-medium flex items-center gap-2"
+       style="background: color-mix(in oklab, var(--good) 10%, transparent); border:1px solid color-mix(in oklab, var(--good) 25%, transparent); color: var(--good); position: relative; z-index: 10;">
+    <span class="pulse-dot"></span>
+    GATEWAY STATUS: Nominal. Network operation parameters within safe enterprise baseline margins.
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="panel p-5 flex flex-col h-[350px]">
+      <div class="flex items-center gap-2 mb-1">
+        <span style="color: var(--accent-2);">📊</span>
+        <h4 class="text-[11px] font-bold uppercase tracking-widest" style="color: var(--text-soft);">Rolling Capital Velocity Load</h4>
+      </div>
+      <p class="text-[10px] mono mb-2" style="color: var(--text-mute);">Transaction Capital Spikes Chronologically</p>
+      <div class="relative flex-1 w-full min-h-0"><canvas id="lineChart"></canvas></div>
+    </div>
+    <div class="panel p-5 flex flex-col h-[350px]">
+      <div class="flex items-center gap-2 mb-1">
+        <span style="color: var(--accent);">🍩</span>
+        <h4 class="text-[11px] font-bold uppercase tracking-widest" style="color: var(--text-soft);">Threat Distribution by Merchant</h4>
+      </div>
+      <p class="text-[10px] mono mb-2" style="color: var(--text-mute);">Capital Densities by Segment Node</p>
+      <div class="relative flex-1 flex items-center justify-center min-h-0 w-full"><canvas id="donutChart"></canvas></div>
+    </div>
+    <div class="panel p-5 flex flex-col h-[350px]">
+      <div class="flex items-center gap-2 mb-1">
+        <span style="color: var(--good);">📱</span>
+        <h4 class="text-[11px] font-bold uppercase tracking-widest" style="color: var(--text-soft);">Device Vector Breakdown</h4>
+      </div>
+      <p class="text-[10px] mono mb-2" style="color: var(--text-mute);">Payload Value via Device Node</p>
+      <div class="relative flex-1 w-full min-h-0"><canvas id="deviceBarChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel overflow-hidden">
+    <div class="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b" style="border-color: var(--border-soft);">
+      <div class="flex items-center gap-2">
+        <span>🔍</span>
+        <h2 class="text-[12px] font-bold uppercase tracking-widest" style="color: var(--text);">Advanced Threat Search & Investigation Log</h2>
+      </div>
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <input id="search-user" oninput="filterTable()" placeholder="Filter by User ID..." class="field w-full sm:w-44"/>
+        <select id="filter-status" onchange="filterTable()" class="field">
+          <option value="ALL">All Verdicts</option>
+          <option value="NOMINAL">Nominal Only</option>
+          <option value="MALICIOUS">Malicious Only</option>
+        </select>
+      </div>
+    </div>
+    <div class="overflow-x-auto max-h-[420px]">
+      <table class="w-full text-left border-collapse whitespace-nowrap">
+        <thead class="sticky top-0 z-10 text-[10px] uppercase tracking-widest"
+               style="background: color-mix(in oklab, var(--bg) 90%, transparent); color: var(--text-mute); backdrop-filter: blur(10px);">
+          <tr>
+            <th class="p-4">id</th><th class="p-4">user_id</th><th class="p-4">amount</th>
+            <th class="p-4">location</th><th class="p-4">merchant</th><th class="p-4">device</th>
+            <th class="p-4">risk_score</th><th class="p-4">is_anomaly</th><th class="p-4">verdict</th>
+          </tr>
+        </thead>
+        <tbody id="transaction-rows" class="text-[11px] font-medium" style="color: var(--text-soft);"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div id="inspectorModal" class="fixed inset-0 z-50 hidden modal-blur flex items-center justify-center p-4 transition-all duration-300">
+  <div class="w-full max-w-2xl rounded-2xl overflow-hidden transform scale-95 transition-transform duration-300"
+       style="background: var(--panel-solid); border: 1px solid var(--border);">
+    <div class="p-6 border-b flex justify-between items-center" style="border-color: var(--border-soft);">
+      <div>
+        <h3 class="display text-base font-bold tracking-wider uppercase flex items-center gap-2" style="color: var(--text);">🕵️ Forensic Telemetry Inspection</h3>
+        <p class="text-[10px] mono mt-0.5" id="modal-tx-hash" style="color: var(--text-mute);">TX_ID: #0000</p>
+      </div>
+      <button onclick="closeInspector()" class="btn-ghost">✕ CLOSE</button>
+    </div>
+    <div class="p-6 space-y-5">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="p-4 rounded-xl" style="background: color-mix(in oklab, var(--bg) 60%, transparent); border:1px solid var(--border-soft);">
+          <span class="text-[9px] font-bold uppercase tracking-widest block" style="color: var(--text-mute);">Account Holder</span>
+          <span class="text-sm font-bold mono block mt-1" id="modal-user-id" style="color: var(--text);">-</span>
+        </div>
+        <div class="p-4 rounded-xl" style="background: color-mix(in oklab, var(--bg) 60%, transparent); border:1px solid var(--border-soft);">
+          <span class="text-[9px] font-bold uppercase tracking-widest block" style="color: var(--text-mute);">Valuation</span>
+          <span class="text-sm font-bold mono block mt-1" id="modal-amount" style="color: var(--text);">-</span>
+        </div>
+        <div class="p-4 rounded-xl" style="background: color-mix(in oklab, var(--bg) 60%, transparent); border:1px solid var(--border-soft);">
+          <span class="text-[9px] font-bold uppercase tracking-widest block" style="color: var(--text-mute);">Geographic Node</span>
+          <span class="text-sm font-semibold block mt-1" id="modal-location" style="color: var(--text);">-</span>
+        </div>
+        <div class="p-4 rounded-xl" style="background: color-mix(in oklab, var(--bg) 60%, transparent); border:1px solid var(--border-soft);">
+          <span class="text-[9px] font-bold uppercase tracking-widest block" style="color: var(--text-mute);">Device</span>
+          <span class="text-sm font-semibold block mt-1" id="modal-device" style="color: var(--text);">-</span>
+        </div>
+      </div>
+      <div class="p-5 rounded-xl space-y-3" style="background: color-mix(in oklab, var(--bg) 70%, transparent); border:1px solid var(--border-soft);">
+        <div class="flex justify-between items-center">
+          <span class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--text-soft);">Neural Risk Assessment</span>
+          <span class="mono text-xs font-bold" id="modal-risk-badge" style="color: var(--text);">0%</span>
+        </div>
+        <div class="w-full h-2 rounded-full overflow-hidden" style="background: var(--border);">
+          <div id="modal-risk-bar" class="h-full transition-all duration-700" style="width:0%; background: var(--accent);"></div>
+        </div>
+        <div class="flex justify-between text-[10px] mono" style="color: var(--text-mute);">
+          <span id="modal-category-lbl">Category: General</span>
+          <span id="modal-timestamp-lbl">Logged: -</span>
+        </div>
+      </div>
+      <div id="modal-verdict-box" class="p-4 rounded-xl border flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-widest block" style="color: var(--text-mute);">Automated Firewall Response</span>
+          <span class="text-xs font-extrabold block mt-1" id="modal-action-taken">-</span>
+        </div>
+        <span id="modal-badge-verdict" class="badge"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="alertStack"></div>
+
+<script>
+  // ---------- Theme Config ----------
+  const themeToggle = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  const themeLabel = document.getElementById('themeLabel');
+  
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    themeIcon.textContent = t === 'dark' ? '☾' : '☀';
+    themeLabel.textContent = t === 'dark' ? 'Dark' : 'Light';
+    localStorage.setItem('fr-theme', t);
+    refreshChartTheme();
+  }
+  
+  themeToggle.addEventListener('click', () => {
+    applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  function cssVar(name) { 
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#3A86FF"; 
+  }
+
+  // ---------- Application State Memory ----------
+  let globalDataStore = [];
+  let knownIds = new Set();
+  let lineChartInstance, donutChartInstance, deviceBarChartInstance;
+  const counters = { 'total-tx': 0, 'fraud-tx': 0, 'fraud-rate': 0, 'total-volume': 0, 'mean-risk': 0 };
+
+  // ---------- Animated counters Engine ----------
+  function tweenNumber(id, to, formatter) {
+    const start = counters[id] || 0;
+    const dur = 700; const t0 = performance.now();
+    function step(t) {
+      const k = Math.min(1, (t - t0) / dur);
+      const eased = 1 - Math.pow(1 - k, 3);
+      const v = start + (to - start) * eased;
+      const targetEl = document.getElementById(id);
+      if(targetEl) targetEl.textContent = formatter(v);
+      if (k < 1) requestAnimationFrame(step);
+      else counters[id] = to;
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---------- Gauge Metric Controller ----------
+  function setGauge(pct) {
+    const clamped = Math.max(0, Math.min(100, pct));
+    const len = 157; 
+    document.getElementById('gaugeArc').setAttribute('stroke-dashoffset', len - (len * clamped / 100));
+    const angle = -90 + (clamped / 100) * 180;
+    document.getElementById('gaugeNeedle').style.transform = `rotate(${angle}deg)`;
+    const lbl = clamped < 30 ? 'low exposure' : clamped < 60 ? 'moderate exposure' : clamped < 80 ? 'elevated risk' : 'critical risk';
+    document.getElementById('risk-label').textContent = lbl;
+  }
+
+  // ---------- Charts Compilers ----------
+  function initCharts() {
+    const ctxLine = document.getElementById('lineChart').getContext('2d');
+    lineChartInstance = new Chart(ctxLine, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'is_anomaly = 1', data: [], borderColor: '#FF0055', backgroundColor: 'transparent', borderWidth: 1.6, tension: 0.1, pointRadius: 2, pointBackgroundColor: '#FF0055', spanGaps: true },
+          { label: 'is_anomaly = 0', data: [], borderColor: '#00F5D4', backgroundColor: 'transparent', borderWidth: 1.6, tension: 0.1, pointRadius: 0, spanGaps: true },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'top', labels: { color: '#94A3B8', font: { size: 10 }, boxWidth: 10 } } },
+        scales: {
+          x: { grid: { color: 'rgba(28,37,65,0.2)' }, ticks: { display: false } },
+          y: { min: 0, max: 10000, grid: { color: 'rgba(28,37,65,0.4)' }, ticks: { color: '#64748B', font: { size: 10 } } }
+        }
+      }
+    });
+
+    const ctxDonut = document.getElementById('donutChart').getContext('2d');
+    donutChartInstance = new Chart(ctxDonut, {
+      type: 'doughnut',
+      data: { labels: [], datasets: [{ data: [], backgroundColor: ['#3A86FF','#FF0055','#FFB703','#00F5D4','#8338EC','#FF006E','#04E762'], borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: { legend: { position: 'right', labels: { color: '#94A3B8', font: { size: 10 }, boxWidth: 8 } } } }
+    });
+
+    const ctxBar = document.getElementById('deviceBarChart').getContext('2d');
+    deviceBarChartInstance = new Chart(ctxBar, {
+      type: 'bar',
+      data: { labels: [], datasets: [{ data: [], backgroundColor: 'rgba(99,102,241,0.85)', hoverBackgroundColor: '#6366F1', borderWidth: 0, borderRadius: 4, barThickness: 18 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(28,37,65,0.2)' }, ticks: { color: '#64748B', font: { size: 10 } } },
+          y: { grid: { color: 'rgba(28,37,65,0.4)' }, ticks: { color: '#64748B', font: { size: 10 } } }
+        } }
+    });
+  }
+
+  function refreshChartTheme() {
+    if (!lineChartInstance) return;
+    const ts = cssVar('--text-soft') || '#94A3B8';
+    const tm = cssVar('--text-mute') || '#64748B';
+    const bs = cssVar('--border-soft') || 'rgba(28,37,65,0.3)';
+    
+    [lineChartInstance, deviceBarChartInstance].forEach(c => {
+      c.options.scales.x.grid.color = bs; c.options.scales.y.grid.color = bs;
+      c.options.scales.x.ticks.color = tm; c.options.scales.y.ticks.color = tm;
+    });
+    lineChartInstance.options.plugins.legend.labels.color = ts;
+    donutChartInstance.options.plugins.legend.labels.color = ts;
+    lineChartInstance.update(); donutChartInstance.update(); deviceBarChartInstance.update();
+  }
+
+  // ---------- Push Notification Toasts ----------
+  function pushAlert(tx) {
+    const stack = document.getElementById('alertStack');
+    if (stack.children.length >= 4) stack.removeChild(stack.firstChild);
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `
+      <div style="font-size:18px; line-height:1;">⚠️</div>
+      <div style="flex:1;">
+        <div class="text-[10px] font-bold uppercase tracking-widest" style="color: var(--bad);">Malicious transaction intercepted</div>
+        <div class="text-[12px] mt-1" style="color: var(--text);">User <span class="mono font-bold">${tx.user_id}</span> · <span class="mono">$${tx.amount.toFixed(2)}</span></div>
+        <div class="text-[10px] mt-0.5" style="color: var(--text-mute);">${tx.location} · ${tx.device_type || 'Unknown'} · risk ${(tx.risk_score*100).toFixed(0)}%</div>
+      </div>
+      <button class="btn-ghost" style="padding:2px 6px; font-size:10px;">✕</button>
+    `;
+    el.querySelector('button').onclick = () => dismiss(el);
+    el.onclick = (e) => { if (e.target.tagName !== 'BUTTON') { closeInspector(); inspectTransaction(tx.id); } };
+    stack.appendChild(el);
+    setTimeout(() => dismiss(el), 6000);
+  }
+  function dismiss(el){ el.classList.add('out'); setTimeout(()=>el.remove(), 300); }
+
+  // ---------- Dynamic REST Synchronization ----------
+  async function fetchData() {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/transactions');
+      const data = await response.json();
+
+      if (knownIds.size > 0) {
+        const fresh = data.filter(tx => !knownIds.has(tx.id) && (tx.is_anomaly === 1 || tx.is_anomaly === true));
+        fresh.slice(0, 4).forEach(pushAlert);
+      }
+      knownIds = new Set(data.map(d => d.id));
+      globalDataStore = data;
+
+      const total = data.length;
+      const fraud = data.filter(tx => tx.is_anomaly === 1 || tx.is_anomaly === true).length;
+      const rate = total > 0 ? (fraud / total) * 100 : 0;
+      const totalVolume = data.reduce((s, tx) => s + tx.amount, 0);
+      const avgRisk = total > 0 ? (data.reduce((s, tx) => s + tx.risk_score, 0) / total) * 100 : 0;
+
+      tweenNumber('total-tx', total, v => Math.round(v).toLocaleString());
+      tweenNumber('fraud-tx', fraud, v => `${Math.round(v)} cases`);
+      tweenNumber('fraud-rate', rate, v => `${v.toFixed(1)}%`);
+      tweenNumber('total-volume', totalVolume, v => `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`);
+      tweenNumber('mean-risk', avgRisk, v => `${v.toFixed(1)}%`);
+      setGauge(avgRisk);
+
+      // --- Chronological Multi-Series Mapping Tracker ---
+      const timelineData = [...data].slice(0, 80).reverse();
+      lineChartInstance.data.labels = timelineData.map((_, i) => i);
+      lineChartInstance.data.datasets[0].data = timelineData.map(tx => (tx.is_anomaly === 1 || tx.is_anomaly === true) ? tx.amount : null);
+      lineChartInstance.data.datasets[1].data = timelineData.map(tx => (tx.is_anomaly === 0 || tx.is_anomaly === false) ? tx.amount : null);
+      lineChartInstance.update();
+
+      // Donut Chart Category Safe Mapping
+      const merchantMap = {};
+      data.forEach(tx => { 
+        const category = tx.merchant_category || 'General';
+        merchantMap[category] = (merchantMap[category] || 0) + 1; 
+      });
+      donutChartInstance.data.labels = Object.keys(merchantMap);
+      donutChartInstance.data.datasets[0].data = Object.values(merchantMap);
+      donutChartInstance.update();
+
+      // Device Bar Chart Safe Mapping
+      const deviceMap = {};
+      data.forEach(tx => { 
+        const device = tx.device_type || 'Unknown';
+        deviceMap[device] = (deviceMap[device] || 0) + tx.amount; 
+      });
+      deviceBarChartInstance.data.labels = Object.keys(deviceMap);
+      deviceBarChartInstance.data.datasets[0].data = Object.values(deviceMap);
+      deviceBarChartInstance.update();
+
+      renderTable(data);
+    } catch (e) {
+      console.error('Data Sync Interruption:', e);
+    }
+  }
+
+  // ---------- Document Sheet Renderer ----------
+  function renderTable(dataset) {
+    const tbody = document.getElementById('transaction-rows');
+    tbody.innerHTML = '';
+    
+    dataset.slice(0, 60).forEach((tx, i) => {
+      const isMal = tx.is_anomaly === 1 || tx.is_anomaly === true;
+      const verdict = isMal
+        ? `<span class="badge badge-bad">MALICIOUS</span>`
+        : `<span class="badge badge-good">NOMINAL</span>`;
+        
+      const row = document.createElement('tr');
+      row.className = 'row-enter cursor-pointer transition-colors';
+      row.style.borderBottom = '1px solid var(--border-soft)';
+      row.style.animationDelay = (i * 8) + 'ms';
+      row.onclick = () => inspectTransaction(tx.id);
+      
+      row.innerHTML = `
+        <td class="p-3.5 mono font-semibold" style="color: var(--text-mute);">#${tx.id}</td>
+        <td class="p-3.5 font-semibold" style="color: var(--text);">${tx.user_id}</td>
+        <td class="p-3.5 mono font-bold" style="color: var(--text);">$${tx.amount.toFixed(2)}</td>
+        <td class="p-3.5">${tx.location}</td>
+        <td class="p-3.5">${tx.merchant_category || 'General'}</td>
+        <td class="p-3.5">${tx.device_type || 'Unknown'}</td>
+        <td class="p-3.5">
+          <div class="flex items-center gap-2">
+            <div class="w-14 h-1.5 rounded-full overflow-hidden" style="background: var(--border);">
+              <div style="width:${tx.risk_score*100}%; height:100%; background:${isMal ? 'var(--bad)' : 'var(--warn)'};"></div>
+            </div>
+            <span class="text-[10px] mono" style="color: var(--text-mute);">${(tx.risk_score*100).toFixed(0)}%</span>
+          </div>
+        </td>
+        <td class="p-3.5 mono" style="color: var(--text-mute);">${isMal ? 1 : 0}</td>
+        <td class="p-3.5">${verdict}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  // ---------- Inspector Overlay Card ----------
+  function inspectTransaction(id) {
+    const tx = globalDataStore.find(x => x.id === id);
+    if (!tx) return;
+    const isMal = tx.is_anomaly === 1 || tx.is_anomaly === true;
+    
+    document.getElementById('modal-tx-hash').innerText = `SYSTEM_LOG_NODE: #TX-${tx.id}`;
+    document.getElementById('modal-user-id').innerText = tx.user_id;
+    document.getElementById('modal-amount').innerText = `$${tx.amount.toFixed(2)}`;
+    document.getElementById('modal-location').innerText = tx.location;
+    document.getElementById('modal-device').innerText = tx.device_type || 'Unknown Node';
+    document.getElementById('modal-category-lbl').innerText = `Category: ${tx.merchant_category || 'General'}`;
+    document.getElementById('modal-timestamp-lbl').innerText = `Logged: ${tx.timestamp || '-'}`;
+    
+    const pct = (tx.risk_score * 100).toFixed(0);
+    document.getElementById('modal-risk-badge').innerText = `${pct}% RISK INDEX`;
+    const bar = document.getElementById('modal-risk-bar');
+    bar.style.width = `${pct}%`;
+    bar.style.background = isMal ? 'var(--bad)' : 'var(--good)';
+    bar.style.boxShadow = `0 0 12px ${isMal ? 'var(--bad)' : 'var(--good)'}`;
+    
+    const box = document.getElementById('modal-verdict-box');
+    const badge = document.getElementById('modal-badge-verdict');
+    
+    if (isMal) {
+      box.style.borderColor = 'color-mix(in oklab, var(--bad) 40%, transparent)';
+      box.style.background  = 'color-mix(in oklab, var(--bad) 8%, transparent)';
+      document.getElementById('modal-action-taken').innerText = 'GATEWAY INTRUSION DETECTED — ACCESS TOKEN REVOKED / ROUTE BLOCKED';
+      document.getElementById('modal-action-taken').style.color = 'var(--bad)';
+      badge.className = 'badge badge-bad'; badge.innerText = 'REJECTED';
+    } else {
+      box.style.borderColor = 'color-mix(in oklab, var(--good) 40%, transparent)';
+      box.style.background  = 'color-mix(in oklab, var(--good) 8%, transparent)';
+      document.getElementById('modal-action-taken').innerText = 'TRANSACTION CLEARED — AGENT BASELINE VERIFICATION MATCH';
+      document.getElementById('modal-action-taken').style.color = 'var(--good)';
+      badge.className = 'badge badge-good'; badge.innerText = 'APPROVED';
+    }
+    
+    const modal = document.getElementById('inspectorModal');
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.children[0].classList.remove('scale-95'), 50);
+  }
+
+  function closeInspector() {
+    const modal = document.getElementById('inspectorModal');
+    if(!modal.classList.contains('hidden')) {
+      modal.children[0].classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+  }
+
+  function filterTable() {
+    const q = document.getElementById('search-user').value.trim();
+    const s = document.getElementById('filter-status').value;
+    let f = globalDataStore;
+    if (q !== '') f = f.filter(tx => tx.user_id.toString().includes(q));
+    if (s !== 'ALL') f = f.filter(tx => s === 'MALICIOUS' ? (tx.is_anomaly === 1 || tx.is_anomaly === true) : (tx.is_anomaly === 0 || tx.is_anomaly === false));
+    renderTable(f);
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeInspector(); });
+
+  window.onload = () => { 
+    initCharts(); 
+    applyTheme(localStorage.getItem('fr-theme') || 'dark');
+    fetchData(); 
+    setInterval(fetchData, 3000); 
+  };
+</script>
+</body>
+</html>
