@@ -1,0 +1,176 @@
+/* ---------- Deep Dynamic Global Color Tokens ---------- */
+:root[data-theme="dark"] {
+  --bg: #060913;
+  --bg-2: #0B132B;
+  --panel: rgba(11, 19, 43, 0.72);
+  --panel-solid: #0B132B;
+  --border: #1C2541;
+  --border-soft: rgba(28, 37, 65, 0.55);
+  --text: #E5E7EB;
+  --text-soft: #94A3B8;
+  --text-mute: #64748B;
+  --accent: #6366F1;
+  --accent-2: #3A86FF;
+  --good: #00F5D4;
+  --warn: #FFB703;
+  --bad: #FF0055;
+  --grid: rgba(58, 134, 255, 0.06);
+  --glow: radial-gradient(1200px 600px at 20% -10%, rgba(99, 102, 241, 0.18), transparent 60%),
+          radial-gradient(900px 500px at 90% 0%, rgba(58, 134, 255, 0.12), transparent 60%);
+}
+
+:root[data-theme="light"] {
+  --bg: #F5F7FB;
+  --bg-2: #FFFFFF;
+  --panel: rgba(255, 255, 255, 0.85);
+  --panel-solid: #FFFFFF;
+  --border: #E2E8F0;
+  --border-soft: rgba(148, 163, 184, 0.35);
+  --text: #0F172A;
+  --text-soft: #475569;
+  --text-mute: #94A3B8;
+  --accent: #4F46E5;
+  --accent-2: #2563EB;
+  --good: #0EA371;
+  --warn: #B45309;
+  --bad: #DC2626;
+  --grid: rgba(99, 102, 241, 0.06);
+  --glow: radial-gradient(1200px 600px at 20% -10%, rgba(99, 102, 241, 0.10), transparent 60%),
+          radial-gradient(900px 500px at 90% 0%, rgba(37, 99, 235, 0.08), transparent 60%);
+}
+
+/* ---------- Typography & Utility Enforcements ---------- */
+html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; }
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    var(--glow),
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/40px 40px;
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 40%, transparent 90%);
+}
+
+.display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.01em; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Dynamic Layout Bindings mapping standard text classes to colors */
+.text-primary { color: var(--text); }
+.text-soft { color: var(--text-soft); }
+.text-mute { color: var(--text-mute); }
+.text-good { color: var(--good); }
+.text-warn { color: var(--warn); }
+.text-bad { color: var(--bad); }
+.text-accent-2 { color: var(--accent-2); }
+.border-soft { border-color: var(--border-soft); }
+
+/* ---------- Structural Layout System Components ---------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+.header-blur {
+  border-color: var(--border-soft); 
+  background: color-mix(in oklab, var(--bg) 70%, transparent); 
+  backdrop-filter: blur(12px);
+}
+.brand-icon-glow {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)); 
+  box-shadow: 0 6px 20px -6px var(--accent);
+}
+
+.panel {
+  background: var(--panel);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  transition: border-color .25s, transform .25s, box-shadow .25s;
+  position: relative;
+  z-index: 10;
+}
+.panel:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+.panel.kpi::after {
+  content: ""; position: absolute; left: 14px; right: 14px; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: .4;
+}
+
+.gateway-banner {
+  background: color-mix(in oklab, var(--good) 10%, transparent); 
+  border: 1px solid color-mix(in oklab, var(--good) 25%, transparent); 
+  color: var(--good); 
+  position: relative; 
+  z-index: 10;
+}
+
+/* ---------- Operational System Badges ---------- */
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; letter-spacing: .1em; padding: 4px 10px; border-radius: 6px; border: 1px solid; }
+.badge-good { color: var(--good); border-color: color-mix(in oklab, var(--good) 35%, transparent); background: color-mix(in oklab, var(--good) 8%, transparent); }
+.badge-bad  { color: var(--bad);  border-color: color-mix(in oklab, var(--bad) 35%, transparent);  background: color-mix(in oklab, var(--bad) 8%, transparent); }
+.badge-warn { color: var(--warn); border-color: color-mix(in oklab, var(--warn) 35%, transparent); background: color-mix(in oklab, var(--warn) 8%, transparent); }
+
+.pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 0 color-mix(in oklab, var(--good) 60%, transparent); animation: pulse 1.6s infinite; }
+.bg-bad-dot { background: var(--bad); }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--good) 60%, transparent); } 70% { box-shadow: 0 0 0 10px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+.row-enter { animation: rowIn .35s ease-out both; }
+@keyframes rowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Inputs & Interactivity Controls ---------- */
+.field {
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color .2s;
+}
+.field:focus { border-color: var(--accent); }
+
+.btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: white; font-weight: 700; font-size: 11px; letter-spacing: .12em;
+  padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer;
+  box-shadow: 0 6px 20px -8px var(--accent);
+  transition: transform .15s, box-shadow .2s;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px -8px var(--accent); }
+.btn:active { transform: scale(.97); }
+
+.btn-ghost {
+  background: transparent; border: 1px solid var(--border); color: var(--text-soft);
+  padding: 7px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; transition: all .2s;
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+
+/* ---------- Gauge Component Modifiers ---------- */
+.gauge-arc-transition { transition: stroke-dashoffset .8s ease; }
+.gauge-needle-transition { transform-origin: 60px 60px; transform: rotate(-90deg); transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+
+/* ---------- Investigative Logs Table Styling ---------- */
+.table-hdr-bg { background: color-mix(in oklab, var(--bg) 90%, transparent); color: var(--text-mute); backdrop-filter: blur(10px); }
+
+/* ---------- Forensic Inspector Modal Modifiers ---------- */
+.modal-blur { background: color-mix(in oklab, var(--bg) 75%, transparent); backdrop-filter: blur(14px); }
+.modal-body-bg { background: var(--panel-solid); border: 1px solid var(--border); }
+.grid-block-bg { background: color-mix(in oklab, var(--bg) 60%, transparent); border: 1px solid var(--border-soft); }
+.risk-assessment-bg { background: color-mix(in oklab, var(--bg) 70%, transparent); border: 1px solid var(--border-soft); }
+.track-bg { background: var(--border); }
+.risk-fill-base { width: 0%; background: var(--accent); }
+
+/* ---------- Push Alert Toasts Stack Components ---------- */
+.toast {
+  background: var(--panel-solid);
+  border: 1px solid color-mix(in oklab, var(--bad) 45%, var(--border));
+  border-left: 3px solid var(--bad);
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  animation: toastIn .35s cubic-bezier(.2, .8, .2, 1);
+  display: flex; gap: 10px; align-items: flex-start;
+}
+@keyframes toastIn { from { transform: translateX(120%); opacity: 0; } to { transform: none; opacity: 1; } }
+.toast.out { animation: toastOut .3s ease-in forwards; }
+@keyframes toastOut { to { transform: translateX(120%); opacity: 0; } }
