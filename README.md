@@ -21,18 +21,15 @@ The dashboard streams live transactional records, scores them for fraud risk, an
 
 ---
 
-## 🔍 Investigation Log
-
+### 🔍 Investigation Log
 Every transaction is logged with a computed risk score and verdict, and can be filtered by User ID or verdict type.
 
-![Investigation Log](docs/screenshots/Investigation_log.png)
+![Investigation Log](Images/Investigation_log.png)
 
-### Forensic Telemetry Inspection
-
+### 🕵️ Forensic Telemetry Inspection
 Clicking into a flagged transaction opens a detailed forensic view — account holder, valuation, geographic node, device, risk index, and the automated firewall response taken against it.
 
-![Threat Inspection Modal](docs/screenshots/Threat_inspection.png)
-
+![Threat Inspection Modal](Images/Threat_inspection.png)
 ---
 
 ## 🚩 The Problem
