@@ -12,7 +12,7 @@
 ## 📸 Live Dashboard Preview
 
 **Dark mode**
-![Main Dashboard - Dark](docs/screenshots/Main_dashboard_dark.png)
+![Main Dashboard - Dark](Main_dashboard_dark.png)
 
 **Light mode**
 ![Main Dashboard - Light](docs/screenshots/Main_dashboard_white.png)
