@@ -12,10 +12,10 @@
 ## 📸 Live Dashboard Preview
 
 **Dark mode**
-![Main Dashboard - Dark](Images/Main_dashboard_dark.png)
+![Main Dashboard Dark](Images/Main_dashboard(dark).png)
 
 **Light mode**
-![Main Dashboard - Light](docs/screenshots/Main_dashboard_white.png)
+![Main Dashboard Light](Images/Main_dashboard(white).png)
 
 The dashboard streams live transactional records, scores them for fraud risk, and visualizes patterns across merchants, devices, and capital flow — all updating in real time, with full light/dark theme support.
 
