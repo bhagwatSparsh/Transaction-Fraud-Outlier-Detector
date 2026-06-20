@@ -37,8 +37,7 @@ while True:
             "merchant_category": category,
             "device_type": device
         }
-        
-        # Stream the packet directly over the network to our FastAPI app
+       
         response = requests.post(API_URL, json=payload)
         
         if response.status_code == 200:
@@ -51,5 +50,5 @@ while True:
     except requests.exceptions.ConnectionError:
         print("⚠️ Waiting for API Gateway... Make sure app.py is running on port 8000!")
         
-    # Wait 2 seconds before streaming the next transactional event
+ 
     time.sleep(2)

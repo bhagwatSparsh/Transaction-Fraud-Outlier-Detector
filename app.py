@@ -82,11 +82,11 @@ def process_transaction(tx: TransactionRequest):
         raw_score = ml_model.score_samples(input_data)[0]
         risk_score = float(np.clip(1.0 - (raw_score + 0.5) * 2, 0.0, 1.0))
         
-        # Open connection stream to our local SQLite database
+       # Open connection stream to our local SQLite database
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Note: SQLite uses '?' placeholders instead of '%s'
+        # FIXED: Explicit target column routing declarations mapping parameters 1-to-1
         insert_query = """
         INSERT INTO transactions (user_id, amount, location, merchant_category, device_type, risk_score, is_anomaly)
         VALUES (?, ?, ?, ?, ?, ?, ?);
@@ -94,7 +94,13 @@ def process_transaction(tx: TransactionRequest):
         
         # Convert boolean to integer for standard SQLite storage compatibilities (1=True, 0=False)
         cursor.execute(insert_query, (
-            tx.user_id, tx.amount, tx.location, tx.merchant_category, tx.device_type, risk_score, 1 if is_anomaly else 0
+            int(tx.user_id), 
+            float(tx.amount), 
+            str(tx.location), 
+            str(tx.merchant_category), 
+            str(tx.device_type), 
+            float(risk_score), 
+            int(1 if is_anomaly else 0)
         ))
         
         conn.commit()
